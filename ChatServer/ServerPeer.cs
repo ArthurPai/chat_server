@@ -14,6 +14,8 @@ namespace ChatServer
     {
         private static readonly ILogger Log = LogManager.GetCurrentClassLogger();
 
+        public Guid m_Guid;
+
         private int m_UserID;
         private string m_Token;
         private string m_UserName;
@@ -23,6 +25,7 @@ namespace ChatServer
         public ServerPeer(InitRequest initRequest) : base(initRequest)
         {
             // 建構子
+            m_Guid = Guid.NewGuid();
         }
 
         protected override void OnDisconnect(DisconnectReason reasonCode, string reasonDetail)

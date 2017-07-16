@@ -6,11 +6,14 @@ using System.Threading.Tasks;
 using Photon.SocketServer;
 using PhotonHostRuntimeInterfaces;
 using ChatProtocol;
+using ExitGames.Logging;
 
 namespace ChatServer
 {
     public class ServerPeer : ClientPeer
     {
+        private static readonly ILogger Log = LogManager.GetCurrentClassLogger();
+
         private int m_UserID;
         private string m_Token;
         private string m_UserName;
@@ -30,6 +33,15 @@ namespace ChatServer
         protected override void OnOperationRequest(OperationRequest operationRequest, SendParameters sendParameters)
         {
             // 收到Client傳過來的要求，並且加以處理
+            if (Log.IsDebugEnabled)
+            {
+                Log.Debug("OperationRequest");
+                foreach (KeyValuePair<byte, object> item in operationRequest.Parameters)
+                {
+                    Log.DebugFormat("{0} : {1}", item.Key, item.Value.ToString());
+                }
+            }
+
             switch(operationRequest.OperationCode)
             {
                 case (byte)OperationCode.Login:

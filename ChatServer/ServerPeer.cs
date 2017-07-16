@@ -12,6 +12,8 @@ namespace ChatServer
 {
     public class ServerPeer : ClientPeer
     {
+        private static event Action<ServerPeer, EventData, SendParameters> BroadcastMessage;
+
         private static readonly ILogger Log = LogManager.GetCurrentClassLogger();
 
         private ServerApplication m_Server;
@@ -25,12 +27,16 @@ namespace ChatServer
             m_Server = _server;
 
             m_Server.Users.AddPeer(m_Guid, this);
+
+            BroadcastMessage += OnBroadcastMessage;
         }
 
         protected override void OnDisconnect(DisconnectReason reasonCode, string reasonDetail)
         {
             // 斷線處理，例如釋放資源
             m_Server.Users.UserOffline(m_Guid);
+
+            BroadcastMessage -= OnBroadcastMessage;
         }
 
         protected override void OnOperationRequest(OperationRequest operationRequest, SendParameters sendParameters)
@@ -49,6 +55,9 @@ namespace ChatServer
             {
                 case (byte)OperationCode.Login:
                     HandleLogin(operationRequest, sendParameters);
+                    break;
+                case (byte)OperationCode.Chat:
+                    HandleChat(operationRequest, sendParameters);
                     break;
             }
         }
@@ -118,6 +127,33 @@ namespace ChatServer
             };
 
             SendOperationResponse(respone, sendParameters);
+        }
+
+        private void HandleChat(OperationRequest operationRequest, SendParameters sendParameters)
+        {
+            User user = m_Server.Users.GetUser(m_Guid);
+
+            var parameters = new Dictionary<byte, object>
+            {
+                { (byte)ChatParameterCode.NickName, user.nickname },
+                { (byte)ChatParameterCode.Message, operationRequest.Parameters[(byte)ChatParameterCode.Message] },
+            };
+
+            // broadcast chat custom event to other peers
+            var eventData = new EventData((byte)OperationCode.Chat) { Parameters = parameters };
+            BroadcastMessage(this, eventData, sendParameters);
+
+            // send operation response (~ACK) back to peer
+            var response = new OperationResponse(operationRequest.OperationCode, parameters);
+            SendOperationResponse(response, sendParameters);
+        }
+
+        private void OnBroadcastMessage(ServerPeer peer, EventData eventData, SendParameters sendParameters)
+        {
+            if (peer != this) // do not send chat custom event to peer who called the chat custom operation 
+            {
+                SendEvent(eventData, sendParameters);
+            }
         }
     }
 }

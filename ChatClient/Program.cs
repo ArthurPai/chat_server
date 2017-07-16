@@ -57,6 +57,7 @@ namespace ChatClient
                         case GameState.OnLogin:
                             break;
                         case GameState.Chatting:
+                            HandleChatting();
                             break;
                         case GameState.Disconnected:
                             break;
@@ -82,6 +83,10 @@ namespace ChatClient
         public void OnEvent(EventData eventData)
         {
             // 事件處理
+            if (eventData.Code == (byte)OperationCode.Chat)
+            {
+                PrintChatMessage(eventData.Parameters);
+            }
         }
 
         public void OnMessage(object messages)
@@ -96,6 +101,9 @@ namespace ChatClient
             {
                 case (byte)OperationCode.Login:
                     HandleLoggedIn(operationResponse);
+                    break;
+                case (byte)OperationCode.Chat:
+                    PrintChatMessage(operationResponse.Parameters);
                     break;
                 default:
                     DebugReturn(DebugLevel.WARNING, "Unknown Response: " + operationResponse.OperationCode);
@@ -170,6 +178,23 @@ namespace ChatClient
                     m_State = GameState.Connected;
                     break;
             }
+        }
+
+        private void HandleChatting()
+        {
+            Console.Write("\n請輸入聊天訊息：");
+            string buffer = Console.ReadLine();
+
+            // send to server
+            var parameters = new Dictionary<byte, object> {
+                { (byte)ChatParameterCode.Message, buffer }
+            };
+            m_Peer.OpCustom((byte)OperationCode.Chat, parameters, true);
+        }
+
+        private void PrintChatMessage(Dictionary<byte, object> parameters)
+        {
+            Console.WriteLine(string.Format("\n{0}: {1}", parameters[(byte)ChatParameterCode.NickName], parameters[(byte)ChatParameterCode.Message]));
         }
     }
 }

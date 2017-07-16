@@ -14,4 +14,11 @@
         Nickname,
         Ret = 100,
     }
+
+    public enum ChatParameterCode
+    {
+        NickName = 1,
+        Message
+    }
+
 }

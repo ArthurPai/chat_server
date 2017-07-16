@@ -59,9 +59,24 @@ namespace ChatServer
 
         public User GetUser(int id)
         {
-            User user;
+            User user = null;
             UserList.TryGetValue(id, out user);
             return user;
+        }
+
+        public User GetUser(Guid guid)
+        {
+            if (Guid2UserID.ContainsKey(guid))
+            {
+                int userID = Guid2UserID[guid];
+
+                User user = GetUser(userID);
+                return user;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public User GetUserByName(string name)

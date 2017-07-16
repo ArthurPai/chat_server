@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ExitGames.Client.Photon;
 using ChatProtocol;
+using System.Threading;
 
 namespace ChatClient
 {
@@ -37,9 +38,12 @@ namespace ChatClient
         {
             if (m_Peer.Connect("127.0.0.1:4530", "ChatServer"))
             {
+                Thread thread = new Thread(UpdateLoop);
+                thread.IsBackground = true;
+                thread.Start();
+
                 do
                 {
-                    // 讓Photon的service可以處理網路資料，這樣OnOperationResponse及OnEvent才會被觸發
                     m_Peer.Service();
 
                     switch(m_State)
@@ -57,9 +61,16 @@ namespace ChatClient
                         case GameState.Disconnected:
                             break;
                     }
-
-                    System.Threading.Thread.Sleep(500);
                 } while (true);
+            }
+        }
+
+        private void UpdateLoop()
+        {
+            while (true)
+            {
+                // 讓Photon的service可以處理網路資料，這樣OnOperationResponse及OnEvent才會被觸發
+                m_Peer.Service();
             }
         }
 

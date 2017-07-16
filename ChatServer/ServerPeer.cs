@@ -14,23 +14,23 @@ namespace ChatServer
     {
         private static readonly ILogger Log = LogManager.GetCurrentClassLogger();
 
+        private ServerApplication m_Server;
+
         public Guid m_Guid;
 
-        private int m_UserID;
-        private string m_Token;
-        private string m_UserName;
-        private string m_NickName;
-        private static Random random = new Random();
-
-        public ServerPeer(InitRequest initRequest) : base(initRequest)
+        public ServerPeer(InitRequest initRequest, ServerApplication _server) : base(initRequest)
         {
             // 建構子
             m_Guid = Guid.NewGuid();
+            m_Server = _server;
+
+            m_Server.Users.AddPeer(m_Guid, this);
         }
 
         protected override void OnDisconnect(DisconnectReason reasonCode, string reasonDetail)
         {
             // 斷線處理，例如釋放資源
+            m_Server.Users.UserOffline(m_Guid);
         }
 
         protected override void OnOperationRequest(OperationRequest operationRequest, SendParameters sendParameters)
@@ -73,7 +73,8 @@ namespace ChatServer
             var name = (string)operationRequest.Parameters[(byte)LoginParameterCode.Name];
             var password = (string)operationRequest.Parameters[(byte)LoginParameterCode.Password];
 
-            if (name != "test" || password != "111111")
+            User user = m_Server.Users.GetUserByName(name);
+            if (user == null || user.password != password)
             {
                 // 帳號密碼錯誤
                 respone = new OperationResponse((byte)OperationCode.Login)
@@ -86,18 +87,28 @@ namespace ChatServer
                 return;
             }
 
+            Log.Debug("guid 1: " + user.guid);
+            UserResult result = m_Server.Users.UserOnline(m_Guid, user.ID);
+            Log.Debug("guid 2: " + user.guid);
+            if (result.ReturnCode != (byte)ErrorCode.Ok) {
+                respone = new OperationResponse((byte)OperationCode.Login)
+                {
+                    ReturnCode = result.ReturnCode,
+                    DebugMessage = result.DebugMessage,
+                };
+
+                SendOperationResponse(respone, sendParameters);
+                return;
+            }
+
             int Ret = 1;
-            m_UserID = 1;
-            m_Token = RandomString(16);
-            m_UserName = name;
-            m_NickName = "Tester";
             var parameters = new Dictionary<byte, object>
             {
                 { (byte)LoginResponseCode.Ret, Ret },
-                { (byte)LoginResponseCode.ID, m_UserID },
-                { (byte)LoginResponseCode.Token, m_Token },
-                { (byte)LoginResponseCode.Name, m_UserName },
-                { (byte)LoginResponseCode.Nickname, m_NickName },
+                { (byte)LoginResponseCode.ID, user.ID },
+                { (byte)LoginResponseCode.Token, user.token },
+                { (byte)LoginResponseCode.Name, user.name },
+                { (byte)LoginResponseCode.Nickname, user.nickname },
             };
 
             respone = new OperationResponse((byte)OperationCode.Login, parameters)
@@ -107,13 +118,6 @@ namespace ChatServer
             };
 
             SendOperationResponse(respone, sendParameters);
-        }
-
-        public static string RandomString(int length)
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            return new string(Enumerable.Repeat(chars, length)
-              .Select(s => s[random.Next(s.Length)]).ToArray());
         }
     }
 }

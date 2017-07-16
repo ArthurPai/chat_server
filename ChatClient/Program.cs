@@ -150,6 +150,10 @@ namespace ChatClient
                     DebugReturn(DebugLevel.INFO, operationResponse.DebugMessage);
                     m_State = GameState.Connected;
                     break;
+                case (short)ErrorCode.DuplicateLogin: // 重複登入
+                    DebugReturn(DebugLevel.INFO, operationResponse.DebugMessage);
+                    m_State = GameState.Connected;
+                    break;
                 default:
                     DebugReturn(DebugLevel.WARNING, "Unknown RetureCode: " + operationResponse.ReturnCode);
                     m_State = GameState.Connected;

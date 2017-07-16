@@ -20,7 +20,7 @@ namespace ChatServer
         protected override PeerBase CreatePeer(InitRequest initRequest)
         {
             // 建立與Client端的連線，並將建立好的Peer傳回給Photon Server
-            return new ServerPeer(initRequest);
+            return new ServerPeer(initRequest, this);
         }
 
         protected override void Setup()
@@ -39,6 +39,10 @@ namespace ChatServer
             Log.Info("Chat Server is running....");
 
             Users = new UserCollection();
+            Users.AddUser(1, "111111", "arthur", "arthur pai");
+            Users.AddUser(2, "111111", "ken", "ken chang");
+            Users.AddUser(3, "111111", "jet", "jec chou");
+            Users.AddUser(4, "111111", "angel", "angel shu");
         }
 
         protected override void TearDown()

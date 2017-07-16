@@ -15,6 +15,8 @@ namespace ChatServer
     {
         private static readonly ILogger Log = LogManager.GetCurrentClassLogger();
 
+        public UserCollection Users;
+
         protected override PeerBase CreatePeer(InitRequest initRequest)
         {
             // 建立與Client端的連線，並將建立好的Peer傳回給Photon Server
@@ -35,6 +37,8 @@ namespace ChatServer
             }
 
             Log.Info("Chat Server is running....");
+
+            Users = new UserCollection();
         }
 
         protected override void TearDown()

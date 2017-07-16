@@ -6,5 +6,6 @@
         InvalidOperation,
         InvalidParameter,
         InvalidAccountOrPassword,
+        DuplicateLogin,
     }
 }

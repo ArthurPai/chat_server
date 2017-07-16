@@ -132,6 +132,25 @@ namespace ChatServer
         private void HandleChat(OperationRequest operationRequest, SendParameters sendParameters)
         {
             User user = m_Server.Users.GetUser(m_Guid);
+            string token = "";
+
+            if (operationRequest.Parameters.ContainsKey((byte)ChatParameterCode.Token))
+            {
+                token = Convert.ToString(operationRequest.Parameters[(byte)ChatParameterCode.Token]);
+            }
+
+            if (token != user.token)
+            {
+                // 參數錯誤
+                OperationResponse respone = new OperationResponse((byte)OperationCode.Chat)
+                {
+                    ReturnCode = (short)ErrorCode.InvalidToken,
+                    DebugMessage = "未登入",
+                };
+
+                SendOperationResponse(respone, sendParameters);
+                return;
+            }
 
             var parameters = new Dictionary<byte, object>
             {

@@ -22,6 +22,7 @@ namespace ChatClient
     {
         private GameState m_State;
         private PhotonPeer m_Peer;
+        private string m_Token;
         
         public Program()
         {
@@ -77,7 +78,7 @@ namespace ChatClient
 
         public void DebugReturn(DebugLevel level, string message)
         {
-            Console.WriteLine(string.Format("[{0}] {1}", level, message));
+            Console.WriteLine(string.Format("\n[{0}] {1}", level, message));
         }
 
         public void OnEvent(EventData eventData)
@@ -103,7 +104,7 @@ namespace ChatClient
                     HandleLoggedIn(operationResponse);
                     break;
                 case (byte)OperationCode.Chat:
-                    PrintChatMessage(operationResponse.Parameters);
+                    HandleChattingResponse(operationResponse);
                     break;
                 default:
                     DebugReturn(DebugLevel.WARNING, "Unknown Response: " + operationResponse.OperationCode);
@@ -153,11 +154,11 @@ namespace ChatClient
                     {
                         int ret = Convert.ToInt16(operationResponse.Parameters[(byte)LoginResponseCode.Ret]);
                         int id = Convert.ToInt16(operationResponse.Parameters[(byte)LoginResponseCode.ID]);
-                        string token = Convert.ToString(operationResponse.Parameters[(byte)LoginResponseCode.Token]);
+                        m_Token = Convert.ToString(operationResponse.Parameters[(byte)LoginResponseCode.Token]);
                         string name = Convert.ToString(operationResponse.Parameters[(byte)LoginResponseCode.Name]);
                         string nick_name = Convert.ToString(operationResponse.Parameters[(byte)LoginResponseCode.Nickname]);
 
-                        Console.WriteLine("Login succeed ({0}) \nUser ID: {1} \nToken: {2} \nName: {3} \nNickName: {4}", ret, id, token, name, nick_name);
+                        Console.WriteLine("Login succeed ({0}) \nUser ID: {1} \nToken: {2} \nName: {3} \nNickName: {4}", ret, id, m_Token, name, nick_name);
                         m_State = GameState.Chatting;
                     }
                     break;
@@ -187,9 +188,26 @@ namespace ChatClient
 
             // send to server
             var parameters = new Dictionary<byte, object> {
-                { (byte)ChatParameterCode.Message, buffer }
+                { (byte)ChatParameterCode.Message, buffer },
+                { (byte)ChatParameterCode.Token, m_Token }
             };
             m_Peer.OpCustom((byte)OperationCode.Chat, parameters, true);
+        }
+
+        private void HandleChattingResponse(OperationResponse operationResponse)
+        {
+            switch (operationResponse.ReturnCode)
+            {
+                case (short)ErrorCode.Ok:
+                    PrintChatMessage(operationResponse.Parameters);
+                    break;
+                case (short)ErrorCode.InvalidToken:
+                    DebugReturn(DebugLevel.INFO, operationResponse.DebugMessage);
+                    break;
+                default:
+                    DebugReturn(DebugLevel.WARNING, "Unknown RetureCode: " + operationResponse.ReturnCode);
+                    break;
+            }
         }
 
         private void PrintChatMessage(Dictionary<byte, object> parameters)

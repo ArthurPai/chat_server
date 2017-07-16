@@ -7,5 +7,6 @@
         InvalidParameter,
         InvalidAccountOrPassword,
         DuplicateLogin,
+        InvalidToken,
     }
 }

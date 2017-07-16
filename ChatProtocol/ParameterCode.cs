@@ -18,7 +18,8 @@
     public enum ChatParameterCode
     {
         NickName = 1,
-        Message
+        Message,
+        Token,
     }
 
 }
